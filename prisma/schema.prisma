@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  INFLUENCER
+  ADMIN
+}
+
+enum DropStatus {
+  DRAFT
+  COMING_SOON
+  LIVE
+  SOLD_OUT
+  ENDED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  REFUNDED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  avatar    String?
+  role      UserRole @default(INFLUENCER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  drops         Drop[]
+  discountCodes DiscountCode[]
+  orders        Order[]
+  webhooks      Webhook[]
+  otpCodes      OtpCode[]
+  visitors      Visitor[]
+
+  @@map("users")
+}
+
+model Drop {
+  id           String     @id @default(uuid())
+  title        String
+  slug         String     @unique
+  description  String
+  category     String
+  price        Float
+  stock        Int        @default(0)
+  productImage String?
+  isActive     Boolean    @default(true)
+  status       DropStatus @default(DRAFT)
+  config       Json?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  discountCodes  DiscountCodeDrop[]
+  orders         Order[]
+  visitors       Visitor[]
+  webhookDeliveries WebhookDelivery[]
+
+  @@map("drops")
+}
+
+model DiscountCode {
+  id        String    @id @default(uuid())
+  code      String    @unique
+  type      DiscountType
+  value     Float
+  minAmount Float?
+  maxUses   Int?
+  uses      Int       @default(0)
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  drops  DiscountCodeDrop[]
+  orders Order[]
+
+  @@map("discount_codes")
+}
+
+model DiscountCodeDrop {
+  discountCodeId String
+  discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  dropId         String
+  drop           Drop         @relation(fields: [dropId], references: [id], onDelete: Cascade)
+
+  @@id([discountCodeId, dropId])
+  @@map("discount_code_drops")
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  buyerEmail    String
+  buyerName     String
+  buyerPhone    String?
+  buyerAddress  String?
+  buyerCity     String?
+  buyerCountry  String?
+  subtotal      Float
+  discount      Float       @default(0)
+  total         Float
+  status        OrderStatus @default(PENDING)
+  confirmationToken String?  @unique
+  confirmedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  dropId        String
+  drop          Drop        @relation(fields: [dropId], references: [id])
+
+  discountCodeId String?
+  discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("orders")
+}
+
+model OtpCode {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email, code])
+  @@map("otp_codes")
+}
+
+model Webhook {
+  id        String   @id @default(uuid())
+  url       String
+  events    String[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deliveries WebhookDelivery[]
+
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id          String   @id @default(uuid())
+  status      String
+  statusCode  Int?
+  response    String?
+  error       String?
+  createdAt   DateTime @default(now())
+
+  webhookId String
+  webhook   Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  dropId   String?
+  drop     Drop?   @relation(fields: [dropId], references: [id])
+
+  orderId  String?
+
+  @@map("webhook_deliveries")
+}
+
+model Visitor {
+  id        String   @id @default(uuid())
+  sessionId String?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  dropId String
+  drop   Drop   @relation(fields: [dropId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([dropId, createdAt])
+  @@map("visitors")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  entity     String
+  entityId   String
+  changes    Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  userId     String?
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
