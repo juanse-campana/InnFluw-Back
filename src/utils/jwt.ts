@@ -1,7 +1,7 @@
-import { Request } from 'express';
-import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { config } from '../config/index.js';
-import { UnauthorizedError } from '../utils/errors.js';
+import { UnauthorizedError } from './errors.js';
 
 export interface JwtPayload {
   userId: string;
@@ -14,9 +14,10 @@ export interface AuthRequest extends Request {
 }
 
 export const generateToken = (payload: JwtPayload): string => {
-  return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn,
-  });
+  const options: SignOptions = {
+    expiresIn: '7d',
+  };
+  return jwt.sign(payload, config.jwt.secret, options);
 };
 
 export const verifyToken = (token: string): JwtPayload => {
@@ -58,5 +59,3 @@ export const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction
   }
   next();
 };
-
-import { Response, NextFunction } from 'express';

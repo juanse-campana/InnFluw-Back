@@ -4,7 +4,7 @@ import { logger } from '../utils/logger.js';
 interface WebhookPayload {
   dropId?: string;
   orderId?: string;
-  payload: any;
+  payload: Record<string, unknown>;
 }
 
 export const triggerWebhooks = async (
@@ -28,7 +28,7 @@ export const triggerWebhooks = async (
       },
     });
 
-    const relevantWebhooks = webhooks.filter((webhook) => {
+    const relevantWebhooks = webhooks.filter(() => {
       if (!data.dropId) return true;
       return true;
     });
@@ -74,8 +74,9 @@ export const triggerWebhooks = async (
           statusCode: response.status,
           duration,
         });
-      } catch (error: any) {
+      } catch (error) {
         const duration = Date.now() - startTime;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
         await prisma.webhookDelivery.create({
           data: {
@@ -83,14 +84,14 @@ export const triggerWebhooks = async (
             dropId: data.dropId,
             orderId: data.orderId,
             status: 'failed',
-            error: error.message,
+            error: errorMessage,
           },
         });
 
         logger.error('Webhook delivery failed', {
           webhookId: webhook.id,
           eventType,
-          error: error.message,
+          error: errorMessage,
           duration,
         });
       }

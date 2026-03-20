@@ -32,21 +32,24 @@ enum OrderStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  avatar    String?
-  role      UserRole @default(INFLUENCER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                       String    @id @default(uuid())
+  email                    String    @unique
+  password                 String
+  name                     String
+  avatar                   String?
+  role                     UserRole  @default(INFLUENCER)
+  emailVerified            Boolean   @default(false)
+  emailVerificationToken   String?   @unique
+  emailVerificationExpires DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
-  drops         Drop[]
-  discountCodes DiscountCode[]
-  orders        Order[]
-  webhooks      Webhook[]
-  otpCodes      OtpCode[]
-  visitors      Visitor[]
+  drops          Drop[]
+  discountCodes  DiscountCode[]
+  orders         Order[]
+  webhooks       Webhook[]
+  otpCodes       OtpCode[]
+  visitors       Visitor[]
 
   @@map("users")
 }

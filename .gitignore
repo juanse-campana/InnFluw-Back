@@ -138,3 +138,7 @@ uploads/*
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# pnpm
+pnpm-lock.yaml
+.pnpm-store/

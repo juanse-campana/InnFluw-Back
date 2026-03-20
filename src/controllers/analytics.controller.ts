@@ -2,13 +2,12 @@ import { Response } from 'express';
 import { AuthRequest } from '../utils/jwt.js';
 import { asyncHandler, NotFoundError } from '../utils/errors.js';
 import { prisma } from '../config/database.js';
-import { ERROR_MESSAGES } from '../config/constants.js';
 
 export const getDropAnalytics = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
-  const { period = '30d' } = req.query;
+  const id = req.params.id as string;
+  const period = (req.query.period as string) || '30d';
 
-  let startDate = new Date();
+  const startDate = new Date();
   switch (period) {
     case '7d':
       startDate.setDate(startDate.getDate() - 7);
@@ -28,7 +27,7 @@ export const getDropAnalytics = asyncHandler(async (req: AuthRequest, res: Respo
   });
 
   if (!drop) {
-    throw new NotFoundError(ERROR_MESSAGES.DROP_NOT_FOUND);
+    throw new NotFoundError('Drop no encontrado');
   }
 
   const [visitors, orders, discountCodes] = await Promise.all([
@@ -122,9 +121,9 @@ async function getDailyStats(dropId: string, startDate: Date) {
 }
 
 export const getDashboardStats = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { period = '30d' } = req.query;
+  const period = (req.query.period as string) || '30d';
 
-  let startDate = new Date();
+  const startDate = new Date();
   switch (period) {
     case '7d':
       startDate.setDate(startDate.getDate() - 7);

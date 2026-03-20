@@ -4,6 +4,7 @@ import { prisma } from '../config/database.js';
 import { AppError } from '../utils/errors.js';
 import { ERROR_MESSAGES } from '../config/constants.js';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../utils/logger.js';
 
 export const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -104,8 +105,8 @@ export const logAudit = async (
   entity: string,
   entityId: string,
   userId?: string,
-  changes?: any,
-  metadata?: any
+  changes?: object,
+  metadata?: object
 ) => {
   try {
     await prisma.auditLog.create({
@@ -119,6 +120,88 @@ export const logAudit = async (
       },
     });
   } catch (error) {
-    console.error('Failed to create audit log:', error);
+    logger.error('Failed to create audit log', { error });
   }
+};
+
+export const generateVerificationToken = (): string => {
+  return uuidv4();
+};
+
+export const createUserWithVerification = async (data: {
+  email: string;
+  password: string;
+  name: string;
+}) => {
+  const existingUser = await findUserByEmail(data.email);
+  if (existingUser) {
+    throw new AppError(400, ERROR_MESSAGES.EMAIL_EXISTS);
+  }
+
+  const hashedPassword = await hashPassword(data.password);
+  const verificationToken = generateVerificationToken();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  return prisma.user.create({
+    data: {
+      email: data.email,
+      password: hashedPassword,
+      name: data.name,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: expiresAt,
+    },
+  });
+};
+
+export const verifyEmail = async (token: string): Promise<boolean> => {
+  const user = await prisma.user.findFirst({
+    where: {
+      emailVerificationToken: token,
+      emailVerified: false,
+    },
+  });
+
+  if (!user) {
+    return false;
+  }
+
+  if (user.emailVerificationExpires && user.emailVerificationExpires < new Date()) {
+    return false;
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationExpires: null,
+    },
+  });
+
+  return true;
+};
+
+export const resendVerificationEmail = async (email: string): Promise<{ success: boolean; reason?: string }> => {
+  const user = await findUserByEmail(email);
+
+  if (!user) {
+    return { success: false, reason: 'Usuario no encontrado' };
+  }
+
+  if (user.emailVerified) {
+    return { success: false, reason: 'El email ya ha sido verificado' };
+  }
+
+  const verificationToken = generateVerificationToken();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: expiresAt,
+    },
+  });
+
+  return { success: true, reason: verificationToken };
 };

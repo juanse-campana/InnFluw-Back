@@ -27,10 +27,12 @@ export const ERROR_MESSAGES = {
 } as const;
 
 export const SUCCESS_MESSAGES = {
-  USER_CREATED: 'Usuario creado exitosamente',
+  USER_CREATED: 'Usuario creado exitosamente. Por favor verifica tu email.',
   LOGIN_SUCCESS: 'Inicio de sesión exitoso',
   OTP_SENT: 'Código OTP enviado a tu email',
   OTP_VERIFIED: 'Código verificado exitosamente',
+  EMAIL_VERIFIED: 'Email verificado exitosamente',
+  VERIFICATION_RESENT: 'Email de verificación reenviado',
   DROP_CREATED: 'Drop creado exitosamente',
   DROP_UPDATED: 'Drop actualizado exitosamente',
   DROP_DELETED: 'Drop eliminado exitosamente',

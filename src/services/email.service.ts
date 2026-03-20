@@ -154,6 +154,32 @@ export const sendOrderNotificationToInfluencer = async (
   });
 };
 
+export const sendVerificationEmail = async (
+  email: string,
+  name: string,
+  verificationToken: string
+): Promise<boolean> => {
+  const verificationUrl = `${process.env.APP_URL || 'http://localhost:3000'}/api/v1/auth/verify-email?token=${verificationToken}`;
+
+  const html = `
+    <h1>¡Confirma tu email, ${name}!</h1>
+    <p>Gracias por registrarte en Instant Drop. Por favor, confirma tu email haciendo clic en el siguiente enlace:</p>
+    <a href="${verificationUrl}" style="display: inline-block; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; margin: 16px 0;">
+      Confirmar mi email
+    </a>
+    <p>Este enlace expira en 24 horas.</p>
+    <p>Si no creaste una cuenta en Instant Drop, puedes ignorar este email.</p>
+    <br />
+    <p>¡Saludos,<br />El equipo de Instant Drop</p>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: 'Confirma tu email en Instant Drop',
+    html,
+  });
+};
+
 export const sendLowStockAlert = async (
   email: string,
   dropTitle: string,

@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../utils/jwt.js';
-import { asyncHandler, NotFoundError } from '../utils/errors.js';
-import { prisma } from '../config/database.js';
+import { asyncHandler } from '../utils/errors.js';
 import { createWebhookSchema } from '../utils/schemas.js';
 import { createWebhook, deleteWebhook, getWebhooks, getWebhookDeliveries } from '../services/webhook.service.js';
 import { SUCCESS_MESSAGES } from '../config/constants.js';
@@ -28,7 +27,7 @@ export const createWebhookHandler = asyncHandler(async (req: AuthRequest, res: R
 });
 
 export const deleteWebhookHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   await deleteWebhook(id, req.user!.userId);
 
@@ -39,13 +38,13 @@ export const deleteWebhookHandler = asyncHandler(async (req: AuthRequest, res: R
 });
 
 export const getWebhookLogsHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
-  const { limit = '20' } = req.query;
+  const id = req.params.id as string;
+  const limit = (req.query.limit as string) || '20';
 
   const deliveries = await getWebhookDeliveries(
     id,
     req.user!.userId,
-    parseInt(limit as string, 10)
+    parseInt(limit, 10)
   );
 
   res.json({

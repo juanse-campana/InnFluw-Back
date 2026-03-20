@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodSchema, ZodError } from 'zod';
+import { ZodSchema } from 'zod';
 import { logger } from '../utils/logger.js';
 import { ERROR_MESSAGES } from '../config/constants.js';
 import { config } from '../config/index.js';
@@ -16,7 +16,7 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(public errors: ZodError['errors']) {
+  constructor(public errors: Array<{ path: string[]; message: string }>) {
     super(400, ERROR_MESSAGES.VALIDATION_ERROR);
   }
 }
@@ -34,12 +34,13 @@ export class ForbiddenError extends AppError {
 }
 
 export class NotFoundError extends AppError {
-  constructor(message = ERROR_MESSAGES.NOT_FOUND) {
-    super(404, message);
+  constructor(message?: string) {
+    super(404, message || ERROR_MESSAGES.NOT_FOUND);
   }
 }
 
 export const asyncHandler = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
 ) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -51,7 +52,7 @@ export const errorHandler = (
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   logger.error('Error:', {
     message: err.message,
@@ -66,10 +67,7 @@ export const errorHandler = (
       error: {
         code: 'VALIDATION_ERROR',
         message: err.message,
-        errors: err.errors.map((e) => ({
-          field: e.path.join('.'),
-          message: e.message,
-        })),
+        errors: err.errors,
       },
     });
   }
@@ -84,7 +82,7 @@ export const errorHandler = (
     });
   }
 
-  res.status(500).json({
+  return res.status(500).json({
     success: false,
     error: {
       code: 'INTERNAL_ERROR',
@@ -110,11 +108,16 @@ export const validate = (schema: ZodSchema) => {
     try {
       schema.parse(req.body);
       next();
-    } catch (error) {
-      if (error instanceof ZodError) {
-        next(new ValidationError(error));
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'issues' in error) {
+        const zodError = error as { issues: Array<{ path: (string | number)[]; message: string }> };
+        const errors = zodError.issues.map((e) => ({
+          path: e.path.map(String),
+          message: e.message,
+        }));
+        next(new ValidationError(errors));
       } else {
-        next(error);
+        next(error as Error);
       }
     }
   };

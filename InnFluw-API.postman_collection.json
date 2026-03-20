@@ -1,0 +1,878 @@
+{
+  "info": {
+    "name": "InnFluw API",
+    "description": "API REST para Instant Drop SaaS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Verificar estado del servidor"
+          },
+          "response": []
+        },
+        {
+          "name": "Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Información de la API"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data?.token) {",
+                  "        pm.collectionVariables.set('token', jsonData.data.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\",\n    \"name\": \"Test User\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Registrar un nuevo usuario"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data?.token) {",
+                  "        pm.collectionVariables.set('token', jsonData.data.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Iniciar sesión"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify-otp"]
+            },
+            "description": "Verificar código OTP"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Obtener perfil del usuario autenticado"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Nuevo Nombre\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Actualizar perfil del usuario"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Drops",
+      "item": [
+        {
+          "name": "Get All Drops",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/drops",
+              "host": ["{{baseUrl}}"],
+              "path": ["drops"]
+            },
+            "description": "Obtener todos los drops (requiere auth)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Drop by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/drops/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["drops", ":id"]
+            },
+            "description": "Obtener un drop por ID (requiere auth)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Drop by Slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/drops/slug/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["drops", "slug", ":slug"]
+            },
+            "description": "Obtener un drop por slug (público)"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Drop",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Mi Nuevo Drop\",\n    \"slug\": \"mi-nuevo-drop\",\n    \"description\": \"Descripción del producto\",\n    \"category\": \"electronics\",\n    \"price\": 99.99,\n    \"stock\": 100,\n    \"status\": \"DRAFT\",\n    \"config\": {\n        \"theme\": {\n            \"colors\": {\n                \"primary\": \"#6366f1\",\n                \"secondary\": \"#8b5cf6\"\n            }\n        },\n        \"content\": {\n            \"headline\": \"¡Lanzamiento Exclusivo!\",\n            \"ctaText\": \"Comprar Ahora\"\n        }\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/drops",
+              "host": ["{{baseUrl}}"],
+              "path": ["drops"]
+            },
+            "description": "Crear un nuevo drop"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Drop",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Drop Actualizado\",\n    \"price\": 149.99,\n    \"status\": \"LIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/drops/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["drops", ":id"]
+            },
+            "description": "Actualizar un drop"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Drop",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/drops/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["drops", ":id"]
+            },
+            "description": "Eliminar un drop"
+          },
+          "response": []
+        },
+        {
+          "name": "Track Visitor",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"dropId\": \"{{dropId}}\",\n    \"sessionId\": \"session-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/drops/track-visitor",
+              "host": ["{{baseUrl}}"],
+              "path": ["drops", "track-visitor"]
+            },
+            "description": "Rastrear visita a un drop"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Discount Codes",
+      "item": [
+        {
+          "name": "Get All Discount Codes",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/discount-codes",
+              "host": ["{{baseUrl}}"],
+              "path": ["discount-codes"]
+            },
+            "description": "Obtener todos los códigos de descuento"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Discount Code by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/discount-codes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["discount-codes", ":id"]
+            },
+            "description": "Obtener un código de descuento por ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Discount Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/discount-codes/validate?code=DISCOUNT10&dropId={{dropId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["discount-codes", "validate"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "DISCOUNT10"
+                },
+                {
+                  "key": "dropId",
+                  "value": "{{dropId}}"
+                }
+              ]
+            },
+            "description": "Validar un código de descuento"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Discount Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"code\": \"DESCUENTO20\",\n    \"type\": \"PERCENTAGE\",\n    \"value\": 20,\n    \"minAmount\": 50,\n    \"maxUses\": 100,\n    \"expiresAt\": \"2026-12-31T23:59:59Z\",\n    \"isActive\": true,\n    \"dropIds\": [\"{{dropId}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/discount-codes",
+              "host": ["{{baseUrl}}"],
+              "path": ["discount-codes"]
+            },
+            "description": "Crear un nuevo código de descuento"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Discount Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"isActive\": false,\n    \"maxUses\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/discount-codes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["discount-codes", ":id"]
+            },
+            "description": "Actualizar un código de descuento"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Discount Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/discount-codes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["discount-codes", ":id"]
+            },
+            "description": "Eliminar un código de descuento"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Checkout",
+      "item": [
+        {
+          "name": "Simulate Checkout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"dropId\": \"{{dropId}}\",\n    \"discountCode\": \"DESCUENTO20\",\n    \"buyerEmail\": \"buyer@example.com\",\n    \"buyerName\": \"Juan Comprador\",\n    \"buyerPhone\": \"+5491112345678\",\n    \"buyerAddress\": \"Calle Falsa 123\",\n    \"buyerCity\": \"Buenos Aires\",\n    \"buyerCountry\": \"Argentina\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/checkout/simulate",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkout", "simulate"]
+            },
+            "description": "Simular checkout (sin procesar pago)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Orders",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/checkout/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkout", "orders"]
+            },
+            "description": "Obtener órdenes del usuario"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/checkout/orders/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkout", "orders", ":id"]
+            },
+            "description": "Obtener una orden por ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/checkout/confirm/:token",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkout", "confirm", ":token"]
+            },
+            "description": "Confirmar una orden con token"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "dashboard"]
+            },
+            "description": "Obtener estadísticas del dashboard"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Drop Analytics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/drops/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "drops", ":id"]
+            },
+            "description": "Obtener analíticas de un drop específico"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "Get Webhooks",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks"]
+            },
+            "description": "Obtener todos los webhooks"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Webhook",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://your-webhook-url.com/webhook\",\n    \"events\": [\"order.created\", \"order.confirmed\", \"drop.stock.low\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhooks",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks"]
+            },
+            "description": "Crear un nuevo webhook"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Webhook",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", ":id"]
+            },
+            "description": "Eliminar un webhook"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Webhook Logs",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/:id/logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", ":id", "logs"]
+            },
+            "description": "Obtener logs de un webhook"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Upload",
+      "item": [
+        {
+          "name": "Upload File",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["upload"]
+            },
+            "description": "Subir un archivo"
+          },
+          "response": []
+        },
+        {
+          "name": "Get File",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/upload/:filename",
+              "host": ["{{baseUrl}}"],
+              "path": ["upload", ":filename"]
+            },
+            "description": "Obtener un archivo por nombre"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

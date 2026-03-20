@@ -1,6 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { config } from '../config/index.js';
-import { logger } from '../utils/logger.js';
 import { APP_NAME } from '../config/constants.js';
 
 import authRoutes from './auth.routes.js';

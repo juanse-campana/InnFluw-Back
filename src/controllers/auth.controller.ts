@@ -2,8 +2,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../utils/jwt.js';
 import { asyncHandler } from '../utils/errors.js';
 import { registerSchema, loginSchema, verifyOtpSchema } from '../utils/schemas.js';
-import { createUser, findUserByEmail, comparePassword, createOtpCode, verifyOtpCode, logAudit } from '../services/auth.service.js';
-import { sendWelcomeEmail, sendOtpEmail } from '../services/email.service.js';
+import { createUserWithVerification, findUserByEmail, comparePassword, createOtpCode, verifyOtpCode, logAudit, verifyEmail, resendVerificationEmail } from '../services/auth.service.js';
+import { sendWelcomeEmail, sendOtpEmail, sendVerificationEmail } from '../services/email.service.js';
 import { generateToken } from '../utils/jwt.js';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../config/constants.js';
 import { prisma } from '../config/database.js';
@@ -11,13 +11,13 @@ import { prisma } from '../config/database.js';
 export const register = asyncHandler(async (req: AuthRequest, res: Response) => {
   const data = registerSchema.parse(req.body);
 
-  const user = await createUser({
+  const user = await createUserWithVerification({
     email: data.email,
     password: data.password,
     name: data.name,
   });
 
-  await sendWelcomeEmail(user.email, user.name);
+  await sendVerificationEmail(user.email, user.name, user.emailVerificationToken!);
 
   await logAudit('user.created', 'User', user.id, user.id);
 
@@ -30,6 +30,7 @@ export const register = asyncHandler(async (req: AuthRequest, res: Response) => 
         email: user.email,
         name: user.name,
         createdAt: user.createdAt,
+        emailVerified: user.emailVerified,
       },
     },
   });
@@ -134,6 +135,7 @@ export const getProfile = asyncHandler(async (req: AuthRequest, res: Response) =
       name: true,
       avatar: true,
       role: true,
+      emailVerified: true,
       createdAt: true,
     },
   });
@@ -163,5 +165,76 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
     success: true,
     message: 'Perfil actualizado',
     data: { user },
+  });
+});
+
+export const verifyEmailController = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { token } = req.query;
+
+  if (!token || typeof token !== 'string') {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'INVALID_TOKEN',
+        message: 'Token de verificación no proporcionado',
+      },
+    });
+    return;
+  }
+
+  const valid = await verifyEmail(token);
+
+  if (!valid) {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'INVALID_VERIFICATION_TOKEN',
+        message: 'Token de verificación inválido o expirado',
+      },
+    });
+    return;
+  }
+
+  res.json({
+    success: true,
+    message: SUCCESS_MESSAGES.EMAIL_VERIFIED,
+  });
+});
+
+export const resendVerificationController = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'EMAIL_REQUIRED',
+        message: 'Email es requerido',
+      },
+    });
+    return;
+  }
+
+  const result = await resendVerificationEmail(email);
+
+  if (!result.success) {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'RESEND_FAILED',
+        message: result.reason,
+      },
+    });
+    return;
+  }
+
+  const user = await findUserByEmail(email);
+  if (user && result.reason) {
+    await sendVerificationEmail(user.email, user.name, result.reason);
+  }
+
+  res.json({
+    success: true,
+    message: SUCCESS_MESSAGES.VERIFICATION_RESENT,
   });
 });

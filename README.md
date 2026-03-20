@@ -14,32 +14,39 @@ API REST para el SaaS de influencers "Instant Drop".
 ## Requisitos
 
 - Node.js 20+
+- pnpm 8+
 - PostgreSQL 16+
 - Redis 7+
 - Docker (opcional)
 
 ## Instalación
 
-### 1. Clonar y configurar entorno
+### 1. Instalar pnpm (si no lo tienes)
+
+```bash
+npm install -g pnpm
+```
+
+### 2. Clonar y configurar entorno
 
 ```bash
 cp .env.example .env
 # Editar .env con tus credenciales
 ```
 
-### 2. Instalar dependencias
+### 3. Instalar dependencias
 
 ```bash
-npm install
+pnpm install
 ```
 
-### 3. Generar cliente Prisma
+### 4. Generar cliente Prisma
 
 ```bash
-npm run prisma:generate
+pnpm prisma:generate
 ```
 
-### 4. Crear base de datos
+### 5. Crear base de datos
 
 ```bash
 # Si usas Docker:
@@ -49,23 +56,23 @@ docker-compose up -d postgres redis
 createdb instant_drop
 ```
 
-### 5. Ejecutar migraciones
+### 6. Ejecutar migraciones
 
 ```bash
-npm run prisma:migrate
+pnpm prisma:migrate
 # O para solo sincronizar el schema:
-npm run prisma:push
+pnpm prisma:push
 ```
 
-### 6. Iniciar servidor
+### 7. Iniciar servidor
 
 ```bash
 # Desarrollo (con hot reload):
-npm run dev
+pnpm dev
 
 # Producción:
-npm run build
-npm start
+pnpm build
+pnpm start
 ```
 
 ## Docker
@@ -84,73 +91,73 @@ Base URL: `http://localhost:3000/api/v1`
 
 ### Autenticación
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/auth/register` | Registrar nuevo usuario |
-| POST | `/auth/login` | Iniciar sesión (envía OTP) |
-| POST | `/auth/verify-otp` | Verificar OTP y obtener JWT |
-| GET | `/auth/profile` | Obtener perfil del usuario |
-| PATCH | `/auth/profile` | Actualizar perfil |
+| Método | Endpoint           | Descripción                 |
+| ------ | ------------------ | --------------------------- |
+| POST   | `/auth/register`   | Registrar nuevo usuario     |
+| POST   | `/auth/login`      | Iniciar sesión (envía OTP)  |
+| POST   | `/auth/verify-otp` | Verificar OTP y obtener JWT |
+| GET    | `/auth/profile`    | Obtener perfil del usuario  |
+| PATCH  | `/auth/profile`    | Actualizar perfil           |
 
 ### Drops (requiere JWT)
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/drops` | Listar drops del usuario |
-| GET | `/drops/:id` | Obtener drop específico |
-| GET | `/drops/slug/:slug` | Obtener drop por slug (público) |
-| POST | `/drops` | Crear nuevo drop |
-| PATCH | `/drops/:id` | Actualizar drop |
-| DELETE | `/drops/:id` | Eliminar drop |
+| Método | Endpoint            | Descripción                     |
+| ------ | ------------------- | ------------------------------- |
+| GET    | `/drops`            | Listar drops del usuario        |
+| GET    | `/drops/:id`        | Obtener drop específico         |
+| GET    | `/drops/slug/:slug` | Obtener drop por slug (público) |
+| POST   | `/drops`            | Crear nuevo drop                |
+| PATCH  | `/drops/:id`        | Actualizar drop                 |
+| DELETE | `/drops/:id`        | Eliminar drop                   |
 
 ### Códigos de Descuento (requiere JWT)
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/discount-codes` | Listar códigos |
-| GET | `/discount-codes/:id` | Obtener código |
-| GET | `/discount-codes/validate` | Validar código |
-| POST | `/discount-codes` | Crear código |
-| PATCH | `/discount-codes/:id` | Actualizar código |
-| DELETE | `/discount-codes/:id` | Eliminar código |
+| Método | Endpoint                   | Descripción       |
+| ------ | -------------------------- | ----------------- |
+| GET    | `/discount-codes`          | Listar códigos    |
+| GET    | `/discount-codes/:id`      | Obtener código    |
+| GET    | `/discount-codes/validate` | Validar código    |
+| POST   | `/discount-codes`          | Crear código      |
+| PATCH  | `/discount-codes/:id`      | Actualizar código |
+| DELETE | `/discount-codes/:id`      | Eliminar código   |
 
 ### Checkout
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/checkout/simulate` | Simular compra |
-| GET | `/checkout/orders` | Listar órdenes (JWT) |
-| GET | `/checkout/orders/:id` | Obtener orden (JWT) |
-| POST | `/checkout/confirm/:token` | Confirmar orden |
+| Método | Endpoint                   | Descripción          |
+| ------ | -------------------------- | -------------------- |
+| POST   | `/checkout/simulate`       | Simular compra       |
+| GET    | `/checkout/orders`         | Listar órdenes (JWT) |
+| GET    | `/checkout/orders/:id`     | Obtener orden (JWT)  |
+| POST   | `/checkout/confirm/:token` | Confirmar orden      |
 
 ### Webhooks (requiere JWT)
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/webhooks` | Listar webhooks |
-| POST | `/webhooks` | Crear webhook |
-| DELETE | `/webhooks/:id` | Eliminar webhook |
-| GET | `/webhooks/:id/logs` | Ver logs de entregas |
+| Método | Endpoint             | Descripción          |
+| ------ | -------------------- | -------------------- |
+| GET    | `/webhooks`          | Listar webhooks      |
+| POST   | `/webhooks`          | Crear webhook        |
+| DELETE | `/webhooks/:id`      | Eliminar webhook     |
+| GET    | `/webhooks/:id/logs` | Ver logs de entregas |
 
 ### Analytics (requiere JWT)
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/analytics/dashboard` | Estadísticas generales |
-| GET | `/analytics/drops/:id` | Estadísticas de un drop |
+| Método | Endpoint               | Descripción             |
+| ------ | ---------------------- | ----------------------- |
+| GET    | `/analytics/dashboard` | Estadísticas generales  |
+| GET    | `/analytics/drops/:id` | Estadísticas de un drop |
 
 ### Upload (requiere JWT)
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/upload` | Subir archivo |
+| Método | Endpoint  | Descripción   |
+| ------ | --------- | ------------- |
+| POST   | `/upload` | Subir archivo |
 
 ### Sistema
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/` | Info de la API |
+| Método | Endpoint  | Descripción    |
+| ------ | --------- | -------------- |
+| GET    | `/health` | Health check   |
+| GET    | `/`       | Info de la API |
 
 ## Ejemplos de Uso
 
@@ -236,14 +243,29 @@ Ver `.env.example` para todas las variables disponibles.
 ## Scripts Disponibles
 
 ```bash
-npm run dev          # Desarrollo con hot reload
-npm run build        # Compilar TypeScript
-npm start            # Iniciar producción
-npm run lint          # Linting
-npm run typecheck    # Verificación de tipos
-npm run prisma:studio # Abrir Prisma Studio
+pnpm dev           # Desarrollo con hot reload
+pnpm build         # Compilar TypeScript
+pnpm start         # Iniciar producción
+pnpm lint          # Linting
+pnpm typecheck     # Verificación de tipos
+pnpm prisma:studio # Abrir Prisma Studio
+pnpm prisma:generate # Generar cliente Prisma
+pnpm prisma:migrate  # Ejecutar migraciones
+pnpm prisma:push     # Sincronizar schema con BD
 ```
 
 ## Licencia
 
 MIT
+
+# 3. Inicia Docker (PostgreSQL + Redis)
+
+docker-compose up -d postgres redis
+
+# 4. Crea las tablas
+
+pnpm prisma:migrate
+
+# 5. Inicia el servidor
+
+pnpm dev

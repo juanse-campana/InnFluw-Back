@@ -1,5 +1,4 @@
 import { Response } from 'express';
-import slugify from 'slugify';
 import { AuthRequest } from '../utils/jwt.js';
 import { asyncHandler, AppError, NotFoundError } from '../utils/errors.js';
 import { createDropSchema, updateDropSchema } from '../utils/schemas.js';
@@ -7,33 +6,19 @@ import { prisma } from '../config/database.js';
 import { logAudit } from '../services/auth.service.js';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../config/constants.js';
 
-const generateUniqueSlug = async (baseSlug: string, userId: string): Promise<string> => {
-  let slug = slugify(baseSlug, { lower: true, strict: true });
-  let counter = 1;
-
-  while (true) {
-    const existing = await prisma.drop.findFirst({
-      where: { slug },
-    });
-
-    if (!existing) break;
-    slug = `${slugify(baseSlug, { lower: true, strict: true })}-${counter}`;
-    counter++;
-  }
-
-  return slug;
-};
-
 export const getDrops = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { status, category, page = '1', limit = '20' } = req.query;
+  const status = req.query.status as string | undefined;
+  const category = req.query.category as string | undefined;
+  const page = (req.query.page as string) || '1';
+  const limit = (req.query.limit as string) || '20';
 
-  const where: any = { userId: req.user!.userId };
+  const where: Record<string, unknown> = { userId: req.user!.userId };
 
   if (status) where.status = status;
   if (category) where.category = category;
 
-  const pageNum = parseInt(page as string, 10);
-  const limitNum = parseInt(limit as string, 10);
+  const pageNum = parseInt(page, 10);
+  const limitNum = parseInt(limit, 10);
   const skip = (pageNum - 1) * limitNum;
 
   const [drops, total] = await Promise.all([
@@ -66,7 +51,7 @@ export const getDrops = asyncHandler(async (req: AuthRequest, res: Response) => 
 });
 
 export const getDrop = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   const drop = await prisma.drop.findFirst({
     where: {
@@ -85,7 +70,7 @@ export const getDrop = asyncHandler(async (req: AuthRequest, res: Response) => {
   });
 
   if (!drop) {
-    throw new NotFoundError(ERROR_MESSAGES.DROP_NOT_FOUND);
+    throw new NotFoundError('Drop no encontrado');
   }
 
   res.json({
@@ -95,7 +80,7 @@ export const getDrop = asyncHandler(async (req: AuthRequest, res: Response) => {
 });
 
 export const getDropBySlug = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { slug } = req.params;
+  const slug = req.params.slug as string;
 
   const drop = await prisma.drop.findUnique({
     where: { slug },
@@ -111,7 +96,7 @@ export const getDropBySlug = asyncHandler(async (req: AuthRequest, res: Response
   });
 
   if (!drop) {
-    throw new NotFoundError(ERROR_MESSAGES.DROP_NOT_FOUND);
+    throw new NotFoundError('Drop no encontrado');
   }
 
   res.json({
@@ -124,7 +109,7 @@ export const createDrop = asyncHandler(async (req: AuthRequest, res: Response) =
   const data = createDropSchema.parse(req.body);
 
   const existingSlug = await prisma.drop.findUnique({
-    where: { slug: data.slug },
+    where: { slug: data.slug as string },
   });
 
   if (existingSlug) {
@@ -133,7 +118,15 @@ export const createDrop = asyncHandler(async (req: AuthRequest, res: Response) =
 
   const drop = await prisma.drop.create({
     data: {
-      ...data,
+      title: data.title,
+      slug: data.slug,
+      description: data.description,
+      category: data.category,
+      price: data.price,
+      stock: data.stock,
+      productImage: data.productImage,
+      status: data.status,
+      config: data.config as object,
       userId: req.user!.userId,
     },
   });
@@ -148,7 +141,7 @@ export const createDrop = asyncHandler(async (req: AuthRequest, res: Response) =
 });
 
 export const updateDrop = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const data = updateDropSchema.parse(req.body);
 
   const existingDrop = await prisma.drop.findFirst({
@@ -156,7 +149,7 @@ export const updateDrop = asyncHandler(async (req: AuthRequest, res: Response) =
   });
 
   if (!existingDrop) {
-    throw new NotFoundError(ERROR_MESSAGES.DROP_NOT_FOUND);
+    throw new NotFoundError('Drop no encontrado');
   }
 
   if (data.slug && data.slug !== existingDrop.slug) {
@@ -169,9 +162,14 @@ export const updateDrop = asyncHandler(async (req: AuthRequest, res: Response) =
     }
   }
 
+  const updateData: Record<string, unknown> = { ...data };
+  if (data.config !== undefined) {
+    updateData.config = data.config;
+  }
+
   const drop = await prisma.drop.update({
     where: { id },
-    data,
+    data: updateData,
   });
 
   await logAudit('drop.updated', 'Drop', drop.id, req.user!.userId, data);
@@ -184,14 +182,14 @@ export const updateDrop = asyncHandler(async (req: AuthRequest, res: Response) =
 });
 
 export const deleteDrop = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   const drop = await prisma.drop.findFirst({
     where: { id, userId: req.user!.userId },
   });
 
   if (!drop) {
-    throw new NotFoundError(ERROR_MESSAGES.DROP_NOT_FOUND);
+    throw new NotFoundError('Drop no encontrado');
   }
 
   await prisma.drop.delete({ where: { id } });
@@ -205,18 +203,18 @@ export const deleteDrop = asyncHandler(async (req: AuthRequest, res: Response) =
 });
 
 export const trackVisitor = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { dropId } = req.body;
-  const { sessionId } = req.query;
+  const dropId = req.body.dropId as string;
+  const sessionId = req.query.sessionId as string | undefined;
 
-  const drop = await prisma.drop.findUnique({ where: { id: dropId as string } });
+  const drop = await prisma.drop.findUnique({ where: { id: dropId } });
   if (!drop) {
-    throw new NotFoundError(ERROR_MESSAGES.DROP_NOT_FOUND);
+    throw new NotFoundError('Drop no encontrado');
   }
 
   const visitor = await prisma.visitor.create({
     data: {
-      dropId: dropId as string,
-      sessionId: sessionId as string || null,
+      dropId: dropId,
+      sessionId: sessionId || null,
       ip: req.ip,
       userAgent: req.headers['user-agent'],
       userId: req.user?.userId,

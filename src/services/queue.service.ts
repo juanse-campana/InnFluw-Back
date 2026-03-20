@@ -1,17 +1,14 @@
 import { Queue, Worker, Job } from 'bullmq';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
-import { prisma } from '../config/database.js';
-import redis from '../config/redis.js';
 import {
   sendOrderConfirmationToBuyer,
   sendOrderNotificationToInfluencer,
-  sendLowStockAlert,
 } from './email.service.js';
 import { triggerWebhooks } from './webhook.service.js';
 
 export const emailQueue = new Queue('emails', {
-  connection: redis,
+  connection: { url: config.redis.url },
   defaultJobOptions: {
     attempts: 3,
     backoff: {
@@ -24,7 +21,7 @@ export const emailQueue = new Queue('emails', {
 });
 
 export const webhookQueue = new Queue('webhooks', {
-  connection: redis,
+  connection: { url: config.redis.url },
   defaultJobOptions: {
     attempts: 3,
     backoff: {
@@ -53,10 +50,12 @@ interface OrderEmailJob {
 }
 
 interface StockAlertJob {
-  dropId: string;
-  dropTitle: string;
-  influencerEmail: string;
-  remainingStock: number;
+  data: {
+    dropId: string;
+    dropTitle: string;
+    influencerEmail: string;
+    remainingStock: number;
+  };
 }
 
 export const addOrderEmailJob = async (job: OrderEmailJob) => {
@@ -67,7 +66,7 @@ export const addOrderEmailJob = async (job: OrderEmailJob) => {
 };
 
 export const addStockAlertJob = async (job: StockAlertJob) => {
-  await emailQueue.add('stock-alert', job, {
+  await emailQueue.add('stock-alert', job.data, {
     jobId: `stock-alert-${job.data.dropId}`,
     removeOnComplete: true,
     removeOnFail: true,
@@ -77,7 +76,7 @@ export const addStockAlertJob = async (job: StockAlertJob) => {
 
 export const addWebhookJob = async (
   webhookType: string,
-  data: { dropId?: string; orderId?: string; payload: any }
+  data: { dropId?: string; orderId?: string; payload: Record<string, unknown> }
 ) => {
   await webhookQueue.add('webhook-trigger', { type: webhookType, ...data });
   logger.info('Webhook job added', { type: webhookType });
@@ -117,7 +116,7 @@ const emailWorker = new Worker<OrderEmailJob>(
     }
   },
   {
-    connection: redis,
+    connection: { url: config.redis.url },
     concurrency: config.queue.concurrency,
   }
 );
@@ -130,14 +129,21 @@ emailWorker.on('failed', (job, err) => {
   logger.error('Email job failed', { id: job?.id, error: err.message });
 });
 
-const webhookWorker = new Worker<any>(
+interface WebhookJob {
+  type: string;
+  dropId?: string;
+  orderId?: string;
+  payload: Record<string, unknown>;
+}
+
+const webhookWorker = new Worker<WebhookJob>(
   'webhooks',
-  async (job: Job<any>) => {
+  async (job: Job<WebhookJob>) => {
     const { type, dropId, orderId, payload } = job.data;
     await triggerWebhooks(type, { dropId, orderId, payload });
   },
   {
-    connection: redis,
+    connection: { url: config.redis.url },
     concurrency: config.queue.concurrency,
   }
 );

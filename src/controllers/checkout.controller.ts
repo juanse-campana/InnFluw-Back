@@ -4,9 +4,7 @@ import { asyncHandler, AppError, NotFoundError } from '../utils/errors.js';
 import { checkoutSchema } from '../utils/schemas.js';
 import { prisma } from '../config/database.js';
 import { logAudit, generateConfirmationToken } from '../services/auth.service.js';
-import { addOrderEmailJob, addWebhookJob } from '../services/queue.service.js';
-import { addStockAlertJob } from '../services/queue.service.js';
-import { sendLowStockAlert } from '../services/email.service.js';
+import { addOrderEmailJob, addWebhookJob, addStockAlertJob } from '../services/queue.service.js';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../config/constants.js';
 
 export const simulateCheckout = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -18,7 +16,7 @@ export const simulateCheckout = asyncHandler(async (req: AuthRequest, res: Respo
   });
 
   if (!drop) {
-    throw new NotFoundError(ERROR_MESSAGES.DROP_NOT_FOUND);
+    throw new NotFoundError('Drop no encontrado');
   }
 
   if (drop.status !== 'LIVE') {
@@ -108,10 +106,12 @@ export const simulateCheckout = asyncHandler(async (req: AuthRequest, res: Respo
 
   if (drop.stock - 1 <= 5 && drop.stock - 1 > 0) {
     addStockAlertJob({
-      dropId: drop.id,
-      dropTitle: drop.title,
-      influencerEmail: drop.user.email,
-      remainingStock: drop.stock - 1,
+      data: {
+        dropId: drop.id,
+        dropTitle: drop.title,
+        influencerEmail: drop.user.email,
+        remainingStock: drop.stock - 1,
+      },
     });
   }
 
@@ -127,9 +127,12 @@ export const simulateCheckout = asyncHandler(async (req: AuthRequest, res: Respo
     data: {
       buyerEmail: data.buyerEmail,
       buyerName: data.buyerName,
+      influencerEmail: drop.user.email,
+      influencerName: drop.user.name,
       orderId: order.id,
       dropTitle: drop.title,
       total,
+      discount,
       confirmationToken,
     },
   });
@@ -181,7 +184,7 @@ export const simulateCheckout = asyncHandler(async (req: AuthRequest, res: Respo
 });
 
 export const confirmOrder = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { token } = req.params;
+  const token = req.params.token as string;
 
   const order = await prisma.order.findUnique({
     where: { confirmationToken: token },
@@ -189,7 +192,7 @@ export const confirmOrder = asyncHandler(async (req: AuthRequest, res: Response)
   });
 
   if (!order) {
-    throw new NotFoundError(ERROR_MESSAGES.CONFIRMATION_TOKEN_INVALID);
+    throw new NotFoundError('Token de confirmación inválido');
   }
 
   if (order.status !== 'PENDING') {
@@ -234,9 +237,12 @@ export const confirmOrder = asyncHandler(async (req: AuthRequest, res: Response)
 });
 
 export const getOrders = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { dropId, status, page = '1', limit = '20' } = req.query;
+  const dropId = req.query.dropId as string | undefined;
+  const status = req.query.status as string | undefined;
+  const page = (req.query.page as string) || '1';
+  const limit = (req.query.limit as string) || '20';
 
-  const where: any = { userId: req.user!.userId };
+  const where: Record<string, unknown> = { userId: req.user!.userId };
   if (dropId) where.dropId = dropId;
   if (status) where.status = status;
 
@@ -273,7 +279,7 @@ export const getOrders = asyncHandler(async (req: AuthRequest, res: Response) =>
 });
 
 export const getOrder = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   const order = await prisma.order.findFirst({
     where: { id, userId: req.user!.userId },
@@ -284,7 +290,7 @@ export const getOrder = asyncHandler(async (req: AuthRequest, res: Response) => 
   });
 
   if (!order) {
-    throw new NotFoundError(ERROR_MESSAGES.ORDER_NOT_FOUND);
+    throw new NotFoundError('Orden no encontrada');
   }
 
   res.json({

@@ -7,9 +7,9 @@ import { logAudit } from '../services/auth.service.js';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../config/constants.js';
 
 export const getDiscountCodes = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { isActive } = req.query;
+  const isActive = req.query.isActive as string | undefined;
 
-  const where: any = { userId: req.user!.userId };
+  const where: Record<string, unknown> = { userId: req.user!.userId };
   if (isActive !== undefined) {
     where.isActive = isActive === 'true';
   }
@@ -32,7 +32,7 @@ export const getDiscountCodes = asyncHandler(async (req: AuthRequest, res: Respo
 });
 
 export const getDiscountCode = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   const code = await prisma.discountCode.findFirst({
     where: { id, userId: req.user!.userId },
@@ -106,7 +106,7 @@ export const createDiscountCode = asyncHandler(async (req: AuthRequest, res: Res
 });
 
 export const updateDiscountCode = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
   const data = updateDiscountCodeSchema.parse(req.body);
 
   const existingCode = await prisma.discountCode.findFirst({
@@ -130,8 +130,13 @@ export const updateDiscountCode = asyncHandler(async (req: AuthRequest, res: Res
   const code = await prisma.discountCode.update({
     where: { id },
     data: {
-      ...data,
+      code: data.code,
+      type: data.type,
+      value: data.value,
+      minAmount: data.minAmount,
+      maxUses: data.maxUses,
       expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
+      isActive: data.isActive,
     },
     include: {
       drops: { include: { drop: true } },
@@ -150,7 +155,7 @@ export const updateDiscountCode = asyncHandler(async (req: AuthRequest, res: Res
 
     await prisma.discountCodeDrop.deleteMany({ where: { discountCodeId: id } });
     await prisma.discountCodeDrop.createMany({
-      data: data.dropIds.map((dropId) => ({ discountCodeId: id, dropId })),
+      data: data.dropIds.map((dropId: string) => ({ discountCodeId: id, dropId })),
     });
   }
 
@@ -164,7 +169,7 @@ export const updateDiscountCode = asyncHandler(async (req: AuthRequest, res: Res
 });
 
 export const deleteDiscountCode = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   const code = await prisma.discountCode.findFirst({
     where: { id, userId: req.user!.userId },
@@ -185,7 +190,9 @@ export const deleteDiscountCode = asyncHandler(async (req: AuthRequest, res: Res
 });
 
 export const validateDiscountCode = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { code, dropId, amount } = req.query;
+  const code = req.query.code as string | undefined;
+  const dropId = req.query.dropId as string | undefined;
+  const amount = req.query.amount as string | undefined;
 
   if (!code || !dropId) {
     throw new AppError(400, 'Código y dropId son requeridos');
@@ -226,12 +233,10 @@ export const validateDiscountCode = asyncHandler(async (req: AuthRequest, res: R
     return;
   }
 
-  let discount = 0;
-  if (discountCode.type === 'PERCENTAGE') {
-    discount = (parseFloat(amount as string) * discountCode.value) / 100;
-  } else {
-    discount = discountCode.value;
-  }
+  const subtotal = parseFloat(amount as string);
+  const discountAmount = discountCode.type === 'PERCENTAGE'
+    ? (subtotal * discountCode.value) / 100
+    : discountCode.value;
 
   res.json({
     success: true,
@@ -240,7 +245,7 @@ export const validateDiscountCode = asyncHandler(async (req: AuthRequest, res: R
       code: {
         type: discountCode.type,
         value: discountCode.value,
-        discount: Math.min(discount, parseFloat(amount as string)),
+        discount: Math.min(discountAmount, subtotal),
       },
     },
   });
