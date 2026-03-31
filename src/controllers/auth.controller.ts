@@ -32,6 +32,7 @@ export const register = asyncHandler(async (req: AuthRequest, res: Response) => 
         createdAt: user.createdAt,
         emailVerified: user.emailVerified,
       },
+      verificationUrl: `${process.env.FRONTEND_URL}/auth/verify-email?token=${user.emailVerificationToken}`,
     },
   });
 });
@@ -69,6 +70,9 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response) => {
   res.json({
     success: true,
     message: SUCCESS_MESSAGES.OTP_SENT,
+    data: {
+      otpCode: code,
+    },
   });
 });
 
@@ -236,5 +240,8 @@ export const resendVerificationController = asyncHandler(async (req: AuthRequest
   res.json({
     success: true,
     message: SUCCESS_MESSAGES.VERIFICATION_RESENT,
+    data: {
+      verificationUrl: `${process.env.APP_URL}/api/v1/auth/verify-email?token=${result.reason}`,
+    },
   });
 });

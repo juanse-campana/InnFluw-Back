@@ -159,7 +159,7 @@ export const sendVerificationEmail = async (
   name: string,
   verificationToken: string
 ): Promise<boolean> => {
-  const verificationUrl = `${process.env.APP_URL || 'http://localhost:3000'}/api/v1/auth/verify-email?token=${verificationToken}`;
+  const verificationUrl = `${process.env.FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
 
   const html = `
     <h1>¡Confirma tu email, ${name}!</h1>
