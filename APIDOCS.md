@@ -264,7 +264,7 @@ Auth: Bearer token
 Response: { success, data: { order } }
 
 // CONFIRMAR ORDEN (via email link)
-GET /checkout/confirm/:token
+POST /checkout/confirm/:token
 Auth: No
 Response: { success, message, data: { order: { id, status: "CONFIRMED", confirmedAt } } }
 ```
@@ -456,8 +456,10 @@ interface Order {
   discount: number;
   total: number;
   status: 'PENDING' | 'CONFIRMED' | 'REFUNDED';
+  confirmationToken?: string;
   confirmedAt?: string;
   createdAt: string;
+  updatedAt: string;
   drop: { id: string; title: string; slug: string };
   discountCode?: { id: string; code: string };
 }
@@ -470,6 +472,40 @@ interface Webhook {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// VISITOR
+interface Visitor {
+  id: string;
+  sessionId?: string;
+  ip?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+// AUDIT LOG
+interface AuditLog {
+  id: string;
+  action: string;
+  entity: string;
+  entityId: string;
+  changes?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  userId?: string;
+  createdAt: string;
+}
+
+// WEBHOOK DELIVERY
+interface WebhookDelivery {
+  id: string;
+  status: string;
+  statusCode?: number;
+  response?: string;
+  error?: string;
+  webhookId: string;
+  dropId?: string;
+  orderId?: string;
+  createdAt: string;
 }
 ```
 
