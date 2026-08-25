@@ -31,6 +31,21 @@ enum OrderStatus {
   REFUNDED
 }
 
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+  BANK_TRANSFER
+}
+
+enum BankAccountKind {
+  QR
+  NORMAL
+}
+
+enum BankAccountType {
+  SAVINGS
+  CHECKING
+}
+
 model User {
   id                       String    @id @default(uuid())
   email                    String    @unique
@@ -50,6 +65,7 @@ model User {
   webhooks       Webhook[]
   otpCodes       OtpCode[]
   visitors       Visitor[]
+  bankAccounts   BankAccount[]
 
   @@map("users")
 }
@@ -124,6 +140,10 @@ model Order {
   discount      Float       @default(0)
   total         Float
   status        OrderStatus @default(PENDING)
+  paymentMethod   PaymentMethod @default(CASH_ON_DELIVERY)
+  transferReceipt String?
+  bankAccountId   String?
+  bankAccount     BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
   confirmationToken String?  @unique
   confirmedAt   DateTime?
   createdAt     DateTime    @default(now())
@@ -138,7 +158,30 @@ model Order {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
+  @@index([bankAccountId])
   @@map("orders")
+}
+
+model BankAccount {
+  id                   String          @id @default(uuid())
+  kind                 BankAccountKind
+  financialInstitution String
+  qrImageUrl           String?
+  beneficiaryRucCi     String?
+  beneficiaryName      String
+  accountNumber        String?
+  accountType          BankAccountType?
+  isActive             Boolean         @default(true)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  orders Order[]
+
+  @@index([userId, kind, isActive])
+  @@map("bank_accounts")
 }
 
 model OtpCode {

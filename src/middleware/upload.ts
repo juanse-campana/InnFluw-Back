@@ -44,3 +44,33 @@ export const upload = multer({
 });
 
 export const uploadMiddleware = upload.single('file');
+
+const transferReceiptStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, config.upload.dir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `transfer-receipt-${uuidv4()}${ext}`);
+  },
+});
+
+const transferReceiptFilter = (
+  _req: Express.Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new AppError(400, 'Tipo de comprobante no permitido. Usa: JPG, PNG o WEBP'));
+  }
+};
+
+export const transferReceiptUploadMiddleware = multer({
+  storage: transferReceiptStorage,
+  fileFilter: transferReceiptFilter,
+  limits: { fileSize: config.upload.maxFileSize },
+}).single('file');

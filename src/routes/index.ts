@@ -8,6 +8,7 @@ import checkoutRoutes from './checkout.routes.js';
 import webhooksRoutes from './webhooks.routes.js';
 import analyticsRoutes from './analytics.routes.js';
 import uploadRoutes from './upload.routes.js';
+import bankAccountsRoutes from './bankAccounts.routes.js';
 
 const router = Router();
 
@@ -43,5 +44,6 @@ router.use('/checkout', checkoutRoutes);
 router.use('/webhooks', webhooksRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/bank-accounts', bankAccountsRoutes);
 
 export default router;

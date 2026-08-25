@@ -27,6 +27,21 @@ export const simulateCheckout = asyncHandler(async (req: AuthRequest, res: Respo
     throw new AppError(400, ERROR_MESSAGES.OUT_OF_STOCK);
   }
 
+  if (data.paymentMethod === 'BANK_TRANSFER') {
+    const bankAccount = await prisma.bankAccount.findFirst({
+      where: {
+        id: data.bankAccountId!,
+        userId: drop.userId,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+
+    if (!bankAccount) {
+      throw new AppError(400, 'La cuenta bancaria seleccionada no está disponible para este producto');
+    }
+  }
+
   let discount = 0;
   let discountCodeId: string | null = null;
 
@@ -84,6 +99,9 @@ export const simulateCheckout = asyncHandler(async (req: AuthRequest, res: Respo
         discount,
         total,
         status: 'PENDING',
+        paymentMethod: data.paymentMethod,
+        bankAccountId: data.paymentMethod === 'BANK_TRANSFER' ? data.bankAccountId : null,
+        transferReceipt: data.paymentMethod === 'BANK_TRANSFER' ? data.transferReceipt : null,
         confirmationToken,
       },
       include: {
@@ -236,6 +254,58 @@ export const confirmOrder = asyncHandler(async (req: AuthRequest, res: Response)
   });
 });
 
+export const confirmOrderBySeller = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const id = req.params.id as string;
+
+  const order = await prisma.order.findFirst({
+    where: { id, userId: req.user!.userId },
+  });
+
+  if (!order) {
+    throw new NotFoundError('Orden no encontrada');
+  }
+
+  if (order.status !== 'PENDING') {
+    throw new AppError(400, 'Esta orden ya ha sido procesada');
+  }
+
+  const updatedOrder = await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      status: 'CONFIRMED',
+      confirmedAt: new Date(),
+    },
+  });
+
+  await addWebhookJob('order.confirmed', {
+    dropId: order.dropId,
+    orderId: order.id,
+    payload: {
+      orderId: order.id,
+      buyerEmail: order.buyerEmail,
+      buyerName: order.buyerName,
+      total: order.total,
+    },
+  });
+
+  await logAudit('order.confirmed', 'Order', order.id, undefined, {
+    previousStatus: 'PENDING',
+    newStatus: 'CONFIRMED',
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Orden confirmada exitosamente',
+    data: {
+      order: {
+        id: updatedOrder.id,
+        status: updatedOrder.status,
+        confirmedAt: updatedOrder.confirmedAt,
+      },
+    },
+  });
+});
+
 export const getOrders = asyncHandler(async (req: AuthRequest, res: Response) => {
   const dropId = req.query.dropId as string | undefined;
   const status = req.query.status as string | undefined;
@@ -259,6 +329,18 @@ export const getOrders = asyncHandler(async (req: AuthRequest, res: Response) =>
       include: {
         drop: { select: { id: true, title: true, slug: true } },
         discountCode: { select: { id: true, code: true } },
+        bankAccount: {
+          select: {
+            id: true,
+            kind: true,
+            financialInstitution: true,
+            beneficiaryName: true,
+            beneficiaryRucCi: true,
+            accountNumber: true,
+            accountType: true,
+            qrImageUrl: true,
+          },
+        },
       },
     }),
     prisma.order.count({ where }),
@@ -286,6 +368,18 @@ export const getOrder = asyncHandler(async (req: AuthRequest, res: Response) => 
     include: {
       drop: true,
       discountCode: { select: { id: true, code: true, type: true, value: true } },
+      bankAccount: {
+        select: {
+          id: true,
+          kind: true,
+          financialInstitution: true,
+          beneficiaryName: true,
+          beneficiaryRucCi: true,
+          accountNumber: true,
+          accountType: true,
+          qrImageUrl: true,
+        },
+      },
     },
   });
 

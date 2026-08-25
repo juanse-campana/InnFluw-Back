@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   simulateCheckout,
   confirmOrder,
+  confirmOrderBySeller,
   getOrders,
   getOrder,
 } from '../controllers/checkout.controller.js';
@@ -15,6 +16,7 @@ router.post('/simulate', checkoutRateLimit, validate(checkoutSchema), simulateCh
 
 router.get('/orders', authMiddleware, getOrders);
 router.get('/orders/:id', authMiddleware, getOrder);
+router.post('/orders/:id/confirm', authMiddleware, confirmOrderBySeller);
 
 router.post('/confirm/:token', confirmOrder);
 

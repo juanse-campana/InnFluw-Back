@@ -65,3 +65,9 @@ export const checkoutRateLimit = rateLimit({
   max: 30,
   keyPrefix: 'checkout',
 });
+
+export const transferReceiptRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyPrefix: 'transfer-receipt',
+});

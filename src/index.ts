@@ -12,7 +12,9 @@ const app: Express = express();
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+  origin: process.env.ALLOWED_ORIGINS === '*'
+    ? true
+    : (process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()) || ['http://localhost:3000']),
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
