@@ -16,6 +16,10 @@ export const verifyOtpSchema = z.object({
   code: z.string().length(6, 'El código debe tener 6 dígitos'),
 });
 
+export const resendOtpSchema = z.object({
+  email: z.string().email('Email inválido'),
+});
+
 export const createDropSchema = z.object({
   title: z.string().min(1, 'El título es requerido').max(200),
   slug: z.string().min(1, 'El slug es requerido').regex(/^[a-z0-9-]+$/, 'El slug debe ser lowercase con guiones'),
@@ -185,6 +189,7 @@ export const createVisitorSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
+export type ResendOtpInput = z.infer<typeof resendOtpSchema>;
 export type CreateDropInput = z.infer<typeof createDropSchema>;
 export type UpdateDropInput = z.infer<typeof updateDropSchema>;
 export type CreateDiscountCodeInput = z.infer<typeof createDiscountCodeSchema>;

@@ -52,6 +52,7 @@ model User {
   password                 String
   name                     String
   avatar                   String?
+  sellerSlug               String?   @unique
   role                     UserRole  @default(INFLUENCER)
   emailVerified            Boolean   @default(false)
   emailVerificationToken   String?   @unique

@@ -12,6 +12,7 @@
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
+    "backfill:seller-slugs": "tsx scripts/backfill-seller-slugs.ts",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"
   },

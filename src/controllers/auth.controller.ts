@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../utils/jwt.js';
 import { asyncHandler } from '../utils/errors.js';
-import { registerSchema, loginSchema, verifyOtpSchema } from '../utils/schemas.js';
+import { registerSchema, loginSchema, verifyOtpSchema, resendOtpSchema } from '../utils/schemas.js';
 import { createUserWithVerification, findUserByEmail, comparePassword, createOtpCode, verifyOtpCode, logAudit, verifyEmail, resendVerificationEmail } from '../services/auth.service.js';
 import { sendWelcomeEmail, sendOtpEmail, sendVerificationEmail } from '../services/email.service.js';
 import { generateToken } from '../utils/jwt.js';
@@ -29,6 +29,7 @@ export const register = asyncHandler(async (req: AuthRequest, res: Response) => 
         id: user.id,
         email: user.email,
         name: user.name,
+        sellerSlug: user.sellerSlug,
         createdAt: user.createdAt,
         emailVerified: user.emailVerified,
       },
@@ -71,7 +72,7 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response) => {
     success: true,
     message: SUCCESS_MESSAGES.OTP_SENT,
     data: {
-      otpCode: code,
+      ...(process.env.NODE_ENV === 'development' ? { devOtpCode: code } : {}),
     },
   });
 });
@@ -93,7 +94,17 @@ export const verifyOtp = asyncHandler(async (req: AuthRequest, res: Response) =>
 
   const user = await prisma.user.findUnique({
     where: { email: data.email },
-    select: { id: true, email: true, name: true, role: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      avatar: true,
+      sellerSlug: true,
+      role: true,
+      emailVerified: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 
   if (!user) {
@@ -124,9 +135,29 @@ export const verifyOtp = asyncHandler(async (req: AuthRequest, res: Response) =>
         id: user.id,
         email: user.email,
         name: user.name,
+        avatar: user.avatar,
+        sellerSlug: user.sellerSlug,
         role: user.role,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     },
+  });
+});
+
+export const resendOtp = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const data = resendOtpSchema.parse(req.body);
+  const user = await findUserByEmail(data.email);
+
+  if (user) {
+    const code = await createOtpCode(user.email, user.id);
+    await sendOtpEmail(user.email, code);
+  }
+
+  res.json({
+    success: true,
+    message: SUCCESS_MESSAGES.OTP_SENT,
   });
 });
 
@@ -138,6 +169,7 @@ export const getProfile = asyncHandler(async (req: AuthRequest, res: Response) =
       email: true,
       name: true,
       avatar: true,
+      sellerSlug: true,
       role: true,
       emailVerified: true,
       createdAt: true,
@@ -161,6 +193,7 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
       email: true,
       name: true,
       avatar: true,
+      sellerSlug: true,
       role: true,
     },
   });

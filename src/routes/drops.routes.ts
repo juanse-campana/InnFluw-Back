@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getDrops,
+  getPublicDropsBySeller,
   getDrop,
   getDropBySlug,
   createDrop,
@@ -15,6 +16,7 @@ import { authMiddleware } from '../middleware/index.js';
 const router = Router();
 
 router.get('/', authMiddleware, getDrops);
+router.get('/public/seller/:sellerSlug', getPublicDropsBySeller);
 router.get('/:id', authMiddleware, getDrop);
 router.get('/slug/:slug', getDropBySlug);
 

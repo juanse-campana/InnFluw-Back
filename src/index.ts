@@ -20,7 +20,11 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/uploads', express.static(path.join(process.cwd(), config.upload.dir)));
+app.use('/uploads', express.static(path.join(process.cwd(), config.upload.dir), {
+  setHeaders: (res) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  },
+}));
 
 app.set('trust proxy', 1);
 

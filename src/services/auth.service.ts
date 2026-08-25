@@ -5,6 +5,8 @@ import { AppError } from '../utils/errors.js';
 import { ERROR_MESSAGES } from '../config/constants.js';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger.js';
+import { UserRole } from '@prisma/client';
+import { createAvailableSellerSlug } from './sellerSlug.service.js';
 
 export const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -132,6 +134,7 @@ export const createUserWithVerification = async (data: {
   email: string;
   password: string;
   name: string;
+  role?: UserRole;
 }) => {
   const existingUser = await findUserByEmail(data.email);
   if (existingUser) {
@@ -141,12 +144,18 @@ export const createUserWithVerification = async (data: {
   const hashedPassword = await hashPassword(data.password);
   const verificationToken = generateVerificationToken();
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const role = data.role ?? UserRole.INFLUENCER;
+  const sellerSlug = role === UserRole.INFLUENCER
+    ? await createAvailableSellerSlug(data.name)
+    : undefined;
 
   return prisma.user.create({
     data: {
       email: data.email,
       password: hashedPassword,
       name: data.name,
+      role,
+      sellerSlug,
       emailVerificationToken: verificationToken,
       emailVerificationExpires: expiresAt,
     },

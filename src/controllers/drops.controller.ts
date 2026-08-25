@@ -30,7 +30,7 @@ export const getDrops = asyncHandler(
         take: limitNum,
         include: {
           user: {
-            select: { id: true, name: true, avatar: true },
+            select: { id: true, sellerSlug: true, name: true, avatar: true },
           },
           _count: {
             select: { orders: true },
@@ -52,6 +52,27 @@ export const getDrops = asyncHandler(
         },
       },
     });
+  },
+);
+
+export const getPublicDropsBySeller = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const sellerSlug = req.params.sellerSlug as string;
+    const drops = await prisma.drop.findMany({
+      where: {
+        status: 'LIVE',
+        user: { sellerSlug },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        user: {
+          select: { id: true, sellerSlug: true, name: true, avatar: true },
+        },
+      },
+    });
+
+    res.json({ success: true, data: { drops } });
   },
 );
 
@@ -92,7 +113,7 @@ export const getDropBySlug = asyncHandler(
       where: { slug },
       include: {
         user: {
-          select: { id: true, name: true, avatar: true },
+          select: { id: true, sellerSlug: true, name: true, avatar: true },
         },
         discountCodes: {
           where: { discountCode: { isActive: true } },
